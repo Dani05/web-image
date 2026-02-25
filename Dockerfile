@@ -22,8 +22,8 @@ EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
 # Frontend run stage
-FROM nginx:alpine AS frontend
-COPY --from=frontend-build /app/build /usr/share/nginx/html
+FROM nginxinc/nginx-unprivileged:stable-alpine AS frontend
+COPY --from=frontend-build /app/dist /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 
