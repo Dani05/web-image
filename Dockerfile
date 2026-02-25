@@ -25,6 +25,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 FROM nginxinc/nginx-unprivileged:stable-alpine AS frontend
 COPY --from=frontend-build /app/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+RUN chmod go+r /etc/nginx/conf.d/default.conf
 EXPOSE 8080
 CMD ["nginx", "-g", "daemon off;"]
 
