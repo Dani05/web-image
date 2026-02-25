@@ -36,12 +36,14 @@ env:
   OPENSHIFT_NAMESPACE: "bartadani-dev"
 
   # 🖊️ EDIT to set a name for your OpenShift app, or a default one will be generated below.
-  APP_NAME: "web-image"
+  # APP_NAME: "web-image"
+  FRONTEND_IMAGE: web-image-frontend
+  BACKEND_IMAGE: web-image-backend
 
   # 🖊️ EDIT with the port your application should be accessible on.
   # If the container image exposes *exactly one* port, this can be left blank.
   # Refer to the 'port' input of https://github.com/redhat-actions/oc-new-app
-  APP_PORT: "80"
+  #APP_PORT: "8080"
 
   # 🖊️ EDIT to change the image registry settings.
   # Registries such as GHCR, Quay.io, and Docker Hub are supported.
@@ -137,31 +139,87 @@ jobs:
         echo "IMAGE_TAGS=latest ${GITHUB_SHA::12}" | tee -a $GITHUB_ENV
 
     # https://github.com/redhat-actions/buildah-build#readme
-    - name: Build from Dockerfile
-      id: build-image
+#    - name: Build from Dockerfile
+#      id: build-image
+#      uses: redhat-actions/buildah-build@v2
+#      with:
+#        image: ${{ env.APP_NAME }}
+#        tags: ${{ env.IMAGE_TAGS }}
+#
+#        # If you don't have a Dockerfile/Containerfile, refer to https://github.com/redhat-actions/buildah-build#scratch-build-inputs
+#        # Or, perform a source-to-image build using https://github.com/redhat-actions/s2i-build
+#        # Otherwise, point this to your Dockerfile/Containerfile relative to the repository root.
+#        dockerfiles: |
+#          ./Dockerfile
+
+      # Build frontend image (target=frontend)
+    - name: Build frontend image
+      id: build-frontend
       uses: redhat-actions/buildah-build@v2
       with:
-        image: ${{ env.APP_NAME }}
-        tags: ${{ env.IMAGE_TAGS }}
+        image: ${{ env.FRONTEND_IMAGE }}
+        tags: |
+          latest
+          ${{ github.sha }}
+        context: .
+        dockerfiles: ./Dockerfile
+        extra-args: |
+          --target frontend
+        platform: linux/amd64
 
-        # If you don't have a Dockerfile/Containerfile, refer to https://github.com/redhat-actions/buildah-build#scratch-build-inputs
-        # Or, perform a source-to-image build using https://github.com/redhat-actions/s2i-build
-        # Otherwise, point this to your Dockerfile/Containerfile relative to the repository root.
-        dockerfiles: |
-          ./Dockerfile
+      # Build backend image (target=backend)
+    - name: Build backend image
+      id: build-backend
+      uses: redhat-actions/buildah-build@v2
+      with:
+        image: ${{ env.BACKEND_IMAGE }}
+        tags: |
+          latest
+          ${{ github.sha }}
+        context: .
+        dockerfiles: ./Dockerfile
+        extra-args: |
+          --target backend
+        platform: linux/amd64
 
     # https://github.com/redhat-actions/push-to-registry#readme
-    - name: Push to registry
-      id: push-image
+#    - name: Push to registry
+#      id: push-image
+#      uses: redhat-actions/push-to-registry@v2
+#      with:
+#        image: ${{ steps.build-image.outputs.image }}
+#        tags: ${{ steps.build-image.outputs.tags }}
+#        registry: ${{ env.IMAGE_REGISTRY }}
+#        username: ${{ env.IMAGE_REGISTRY_USER }}
+#        password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
+
+      # Push frontend to GHCR
+    - name: Push frontend image to GHCR
+      id: push-frontend
       uses: redhat-actions/push-to-registry@v2
       with:
-        image: ${{ steps.build-image.outputs.image }}
-        tags: ${{ steps.build-image.outputs.tags }}
+        image: ${{ env.FRONTEND_IMAGE }}
+        tags: |
+          latest
+          ${{ github.sha }}
         registry: ${{ env.IMAGE_REGISTRY }}
         username: ${{ env.IMAGE_REGISTRY_USER }}
         password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
 
-    # The path the image was pushed to is now stored in ${{ steps.push-image.outputs.registry-path }}
+    - name: Push backend image to GHCR
+      id: push-backend
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        image: ${{ env.BACKEND_IMAGE }}
+        tags: |
+          latest
+          ${{ github.sha }}
+        registry: ${{ env.IMAGE_REGISTRY }}
+        username: ${{ env.IMAGE_REGISTRY_USER }}
+        password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
+
+
+      # The path the image was pushed to is now stored in ${{ steps.push-image.outputs.registry-path }}
 
     - name: Install oc
       uses: redhat-actions/openshift-tools-installer@v1
@@ -187,27 +245,53 @@ jobs:
 #        image: ${{ steps.push-image.outputs.registry-path }}
 #        namespace: ${{ env.OPENSHIFT_NAMESPACE }}
 #        port: ${{ env.APP_PORT }}
-    - name: Deploy (no oc-new-app)
+    #Config V2
+#    - name: Deploy (no oc-new-app)
+#      run: |
+#        oc -n ${{ env.OPENSHIFT_NAMESPACE }} get deployment/${{ env.APP_NAME }} >/dev/null 2>&1 && echo "Deployment exists" || \
+#          oc -n ${{ env.OPENSHIFT_NAMESPACE }} create deployment ${{ env.APP_NAME }} --image=${{ steps.push-image.outputs.registry-path }}
+#
+#        oc -n ${{ env.OPENSHIFT_NAMESPACE }} set image deployment/${{ env.APP_NAME }} ${{ env.APP_NAME }}=${{ steps.push-image.outputs.registry-path }}
+#
+#        oc -n ${{ env.OPENSHIFT_NAMESPACE }} expose deployment/${{ env.APP_NAME }} --port=${{ env.APP_PORT }} --name=${{ env.APP_NAME }} || true
+#        oc -n ${{ env.OPENSHIFT_NAMESPACE }} expose service/${{ env.APP_NAME }} || true
+#
+#        oc -n ${{ env.OPENSHIFT_NAMESPACE }} rollout status deployment/${{ env.APP_NAME }}
+
+
+      # Deploy backend + service + route
+    - name: Deploy backend
       run: |
-        oc -n ${{ env.OPENSHIFT_NAMESPACE }} get deployment/${{ env.APP_NAME }} >/dev/null 2>&1 && echo "Deployment exists" || \
-          oc -n ${{ env.OPENSHIFT_NAMESPACE }} create deployment ${{ env.APP_NAME }} --image=${{ steps.push-image.outputs.registry-path }}
+        NS="${{ env.OPENSHIFT_NAMESPACE }}"
+        APP="${{ env.BACKEND_IMAGE }}"
+        IMG="${{ env.IMAGE_REGISTRY }}/${APP}:${{ github.sha }}"
 
-        oc -n ${{ env.OPENSHIFT_NAMESPACE }} set image deployment/${{ env.APP_NAME }} ${{ env.APP_NAME }}=${{ steps.push-image.outputs.registry-path }}
+        oc -n "$NS" get deploy "$APP" >/dev/null 2>&1 || oc -n "$NS" create deployment "$APP" --image="$IMG"
+        oc -n "$NS" set image deploy/"$APP" "$APP"="$IMG"
+        oc -n "$NS" expose deploy "$APP" --port=8080 --name="$APP" || true
+        oc -n "$NS" expose svc "$APP" || true
+        oc -n "$NS" rollout status deploy/"$APP"
 
-        oc -n ${{ env.OPENSHIFT_NAMESPACE }} expose deployment/${{ env.APP_NAME }} --port=${{ env.APP_PORT }} --name=${{ env.APP_NAME }} || true
-        oc -n ${{ env.OPENSHIFT_NAMESPACE }} expose service/${{ env.APP_NAME }} || true
-
-        oc -n ${{ env.OPENSHIFT_NAMESPACE }} rollout status deployment/${{ env.APP_NAME }}
-
-    - name: Print application URL
-      env:
-        ROUTE: ${{ steps.deploy-and-expose.outputs.route }}
-        SELECTOR: ${{ steps.deploy-and-expose.outputs.selector }}
+      # Deploy frontend + service + route
+    - name: Deploy frontend
+      id: deploy-and-expose
       run: |
-        [[ -n ${{ env.ROUTE }} ]] || (echo "Determining application route failed in previous step"; exit 1)
+        NS="${{ env.OPENSHIFT_NAMESPACE }}"
+        APP="${{ env.FRONTEND_IMAGE }}"
+        IMG="${{ env.IMAGE_REGISTRY }}/${APP}:${{ github.sha }}"
+
+        oc -n "$NS" get deploy "$APP" >/dev/null 2>&1 || oc -n "$NS" create deployment "$APP" --image="$IMG"
+        oc -n "$NS" set image deploy/"$APP" "$APP"="$IMG"
+        oc -n "$NS" expose deploy "$APP" --port=8080 --name="$APP" || true
+        oc -n "$NS" expose svc "$APP" || true
+        oc -n "$NS" rollout status deploy/"$APP"
+
+    - name: Print application URLs
+      run: |
+        NS="${{ env.OPENSHIFT_NAMESPACE }}"
         echo
-        echo "======================== Your application is available at: ========================"
-        echo ${{ env.ROUTE }}
-        echo "==================================================================================="
+        echo "Frontend Route:"
+        oc -n "$NS" get route "${{ env.FRONTEND_IMAGE }}" -o jsonpath='{.spec.host}{"\n"}' || true
         echo
-        echo "Your app can be taken down with: \"oc delete all --selector='${{ env.SELECTOR }}'\""
+        echo "Backend Route:"
+        oc -n "$NS" get route "${{ env.BACKEND_IMAGE }}" -o jsonpath='{.spec.host}{"\n"}' || true
