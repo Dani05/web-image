@@ -164,7 +164,8 @@ jobs:
         context: .
         dockerfiles: ./Dockerfile
         extra-args: |
-          --target frontendplatform: linux/amd64
+          --target frontend
+        platform: linux/amd64
 
       # Build backend image (target=backend)
     - name: Build backend image
