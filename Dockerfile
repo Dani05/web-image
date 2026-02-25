@@ -23,7 +23,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 
 # Frontend run stage
 FROM nginxinc/nginx-unprivileged:stable-alpine AS frontend
-COPY --from=frontend-build /app/dist /usr/share/nginx/html
-EXPOSE 80
+COPY --from=frontend-build /app/build /usr/share/nginx/html
+EXPOSE 8080
 CMD ["nginx", "-g", "daemon off;"]
 
