@@ -1,15 +1,29 @@
-# Build stage
-FROM maven:3.9-eclipse-temurin-21 AS build
+# Backend build stage
+FROM maven:3.9-eclipse-temurin-21 AS backend-build
 LABEL name="web-image-backend"
 WORKDIR /app
 COPY web-image-backend/pom.xml .
 COPY web-image-backend/src ./src
 RUN mvn clean package -DskipTests
 
-# Run stage
-FROM eclipse-temurin:21-jre
+# Frontend build stage
+FROM node:20 AS frontend-build
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+COPY web-image-frontend/package.json web-image-frontend/package-lock.json ./
+RUN npm install
+COPY web-image-frontend/ ./
+RUN npm run build
+
+# Backend run stage
+FROM eclipse-temurin:21-jre AS backend
+WORKDIR /app
+COPY --from=backend-build /app/target/*.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# Frontend run stage
+FROM nginx:alpine AS frontend
+COPY --from=frontend-build /app/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
 
