@@ -154,27 +154,32 @@ jobs:
 
       # Build frontend image (target=frontend)
     - name: Build frontend image
+      id: build-frontend
       uses: redhat-actions/buildah-build@v2
       with:
         image: ${{ env.FRONTEND_IMAGE }}
-        tags: latest,${{ github.sha }}
+        tags: |
+          latest
+          ${{ github.sha }}
         context: .
         dockerfiles: ./Dockerfile
-        extra_args: |
-          --target frontend
-          --platform linux/amd64
+        extra-args: |
+          --target frontendplatform: linux/amd64
 
       # Build backend image (target=backend)
     - name: Build backend image
+      id: build-backend
       uses: redhat-actions/buildah-build@v2
       with:
         image: ${{ env.BACKEND_IMAGE }}
-        tags: latest,${{ github.sha }}
+        tags: |
+          latest
+          ${{ github.sha }}
         context: .
         dockerfiles: ./Dockerfile
-        extra_args: |
+        extra-args: |
           --target backend
-          --platform linux/amd64
+        platform: linux/amd64
 
     # https://github.com/redhat-actions/push-to-registry#readme
 #    - name: Push to registry
@@ -193,23 +198,27 @@ jobs:
       uses: redhat-actions/push-to-registry@v2
       with:
         image: ${{ env.FRONTEND_IMAGE }}
-        tags: latest,${{ github.sha }}
+        tags: |
+          latest
+          ${{ github.sha }}
         registry: ${{ env.IMAGE_REGISTRY }}
-        username: ${{ env.IMAGE_REGISTRY_USER  }}
+        username: ${{ env.IMAGE_REGISTRY_USER }}
         password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
 
-      # Push backend to GHCR
     - name: Push backend image to GHCR
       id: push-backend
       uses: redhat-actions/push-to-registry@v2
       with:
         image: ${{ env.BACKEND_IMAGE }}
-        tags: latest,${{ github.sha }}
+        tags: |
+          latest
+          ${{ github.sha }}
         registry: ${{ env.IMAGE_REGISTRY }}
         username: ${{ env.IMAGE_REGISTRY_USER }}
         password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
 
-    # The path the image was pushed to is now stored in ${{ steps.push-image.outputs.registry-path }}
+
+      # The path the image was pushed to is now stored in ${{ steps.push-image.outputs.registry-path }}
 
     - name: Install oc
       uses: redhat-actions/openshift-tools-installer@v1
