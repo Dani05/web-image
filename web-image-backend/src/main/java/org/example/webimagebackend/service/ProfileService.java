@@ -23,12 +23,13 @@ public class ProfileService {
     }
 
 
-    public String login(String username, String hash) {
+    public String login(String username, String password) {
         var profileOpt = profileRepository.findByUsername(username);
         if (profileOpt.isEmpty()) {
             throw new RuntimeException(LOGIN_ERROR_MESSAGE);
         }
         var profile = profileOpt.get();
+        var hash = hashPassword(password);
         if (!hash.equals(profile.getPasswordHash())) {
             throw new RuntimeException(LOGIN_ERROR_MESSAGE);
         }
