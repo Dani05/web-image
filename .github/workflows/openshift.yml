@@ -250,6 +250,11 @@ jobs:
         NS="${{ env.OPENSHIFT_NAMESPACE }}"
         APP="${{ env.BACKEND_IMAGE }}"
         IMG="${{ env.IMAGE_REGISTRY }}/${APP}:${{ github.sha }}"
+        
+        # Create ConfigMap with runtime config
+        oc -n "$NS" create configmap frontend-config \
+        --from-literal=config.js="window.ENV = { API_BASE_URL: '${{ vars.BACKEND_URL }}' };" \
+        --dry-run=client -o yaml | oc apply -f -
 
         oc -n "$NS" get deploy "$APP" >/dev/null 2>&1 || oc -n "$NS" create deployment "$APP" --image="$IMG"
         oc -n "$NS" set image deploy/"$APP" "$APP"="$IMG"
