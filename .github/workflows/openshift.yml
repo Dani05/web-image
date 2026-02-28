@@ -254,7 +254,7 @@ jobs:
         oc -n "$NS" get deploy "$APP" >/dev/null 2>&1 || oc -n "$NS" create deployment "$APP" --image="$IMG"
         oc -n "$NS" set image deploy/"$APP" "$APP"="$IMG"
         oc -n "$NS" expose deploy "$APP" --port=8080 --name="$APP" || true
-        oc -n "$NS" expose svc "$APP" || true
+        oc -n "$NS" get route "$APP" >/dev/null 2>&1 || oc -n "$NS" create route edge "$APP" --service="$APP" --port=8080
         oc -n "$NS" rollout status deploy/"$APP"
 
       # Deploy frontend + service + route
