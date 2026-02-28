@@ -1,4 +1,4 @@
-const API_BASE_URL = window.ENV?.API_BASE_URL || process.env.REACT_APP_API_BASE_URL;
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL + '/api';
 
 // Auth API calls
 export const register = async (username, password) => {
