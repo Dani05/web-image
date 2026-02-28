@@ -165,6 +165,7 @@ jobs:
         dockerfiles: ./Dockerfile
         extra-args: |
           --target frontend
+          --build-arg REACT_APP_BACKEND_URL=${{ vars.BACKEND_URL }}
         platform: linux/amd64
 
       # Build backend image (target=backend)
@@ -235,28 +236,12 @@ jobs:
         insecure_skip_tls_verify: true
         namespace: ${{ env.OPENSHIFT_NAMESPACE }}
 
-    # This step should create a deployment, service, and route to run your app and expose it to the internet.
-    # https://github.com/redhat-actions/oc-new-app#readme
-#    - name: Create and expose app
-#      id: deploy-and-expose
-#      uses: redhat-actions/oc-new-app@v1
-#      with:
-#        app_name: ${{ env.APP_NAME }}
-#        image: ${{ steps.push-image.outputs.registry-path }}
-#        namespace: ${{ env.OPENSHIFT_NAMESPACE }}
-#        port: ${{ env.APP_PORT }}
-    #Config V2
-#    - name: Deploy (no oc-new-app)
-#      run: |
-#        oc -n ${{ env.OPENSHIFT_NAMESPACE }} get deployment/${{ env.APP_NAME }} >/dev/null 2>&1 && echo "Deployment exists" || \
-#          oc -n ${{ env.OPENSHIFT_NAMESPACE }} create deployment ${{ env.APP_NAME }} --image=${{ steps.push-image.outputs.registry-path }}
-#
-#        oc -n ${{ env.OPENSHIFT_NAMESPACE }} set image deployment/${{ env.APP_NAME }} ${{ env.APP_NAME }}=${{ steps.push-image.outputs.registry-path }}
-#
-#        oc -n ${{ env.OPENSHIFT_NAMESPACE }} expose deployment/${{ env.APP_NAME }} --port=${{ env.APP_PORT }} --name=${{ env.APP_NAME }} || true
-#        oc -n ${{ env.OPENSHIFT_NAMESPACE }} expose service/${{ env.APP_NAME }} || true
-#
-#        oc -n ${{ env.OPENSHIFT_NAMESPACE }} rollout status deployment/${{ env.APP_NAME }}
+    - name: Apply JWT secret
+      run: |
+        oc create secret generic backend-jwt \
+          --from-literal=SECURITY_JWT_SECRET_KEY='${{ secrets.JWT_SECRET_KEY }}' \
+          --dry-run=client -o yaml | oc apply -f -  
+
 
 
       # Deploy backend + service + route
