@@ -2,6 +2,7 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 // Auth API calls
 export const register = async (username, password) => {
+    console.log('API Base URL:', API_BASE_URL);
     const response = await fetch(`${API_BASE_URL}/profile/register`, {
         method: 'POST',
         headers: {
