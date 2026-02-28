@@ -165,7 +165,7 @@ jobs:
         dockerfiles: ./Dockerfile
         extra-args: |
           --target frontend
-          --build-arg REACT_APP_BACKEND_URL=${{ vars.BACKEND_URL }}
+          --build-arg REACT_APP_API_BASE_URL_ARG=${{ vars.BACKEND_URL }}
         platform: linux/amd64
 
       # Build backend image (target=backend)
