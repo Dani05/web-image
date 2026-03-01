@@ -1,11 +1,14 @@
 package org.example.webimagebackend.service;
 
 import lombok.AllArgsConstructor;
-import org.example.webimagebackend.config.SecurityProperties;
 import org.example.webimagebackend.persistence.ProfileRepository;
 import org.example.webimagebackend.persistence.entity.Profile;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.Map;
 
 @Service
@@ -42,7 +45,12 @@ public class ProfileService {
     }
 
     private String hashPassword(String password) {
-        //TODO
-        return "hash";
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not available", e);
+        }
     }
 }
