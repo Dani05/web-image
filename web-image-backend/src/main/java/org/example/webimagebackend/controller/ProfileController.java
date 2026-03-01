@@ -5,11 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.webimagebackend.controller.dto.RegisterRequest;
 import org.example.webimagebackend.service.ProfileService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+//@CrossOrigin(origins = "https://https://web-image-frontend-bartadani-dev.apps.rm3.7wse.p1.openshiftapps.com")
 @RestController
 @RequestMapping("/api/profile")
 @Slf4j
