@@ -8,6 +8,8 @@ RUN mvn clean package -DskipTests
 
 # Frontend build stage
 FROM node:20 AS frontend-build
+ARG REACT_APP_API_BASE_URL_ARG
+ENV REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL_ARG}
 WORKDIR /app
 COPY web-image-frontend/package.json web-image-frontend/package-lock.json ./
 RUN npm install
