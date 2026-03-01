@@ -52,7 +52,7 @@ public class TokenService {
             return signedJWT.serialize();
         }
         catch (Exception e) {
-            log.error("JWT TOKEN GENERATION FAILED for subject: {}", subject, e);
+            log.error("JWT TOKEN GENERATION FAILED for subject: {}", securityProperties.getJwtSecretKey() , e);
             throw new RuntimeException("Failed to generate token", e);
         }
     }
