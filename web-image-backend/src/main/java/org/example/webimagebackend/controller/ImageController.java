@@ -2,6 +2,7 @@ package org.example.webimagebackend.controller;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.webimagebackend.controller.dto.ImageResponse;
 import org.example.webimagebackend.model.Image;
 import org.example.webimagebackend.service.ImageService;
 import org.example.webimagebackend.service.TokenService;
@@ -9,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -23,15 +23,19 @@ public class ImageController {
 
 
     @GetMapping
-    public ResponseEntity<List<Image>> getAllImages() {
-        log.info("Getting all images, count: {}", 0);
-        return ResponseEntity.ok(new ArrayList<>());
+    public ResponseEntity<List<ImageResponse>> getAllImages() {
+        var images = imageService.getAllImagesWithDetails();
+        log.info("Getting all images, count: {}", images.size());
+        return ResponseEntity.ok(images);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Image> getImageById(@PathVariable Long id) {
-        log.info("Getting image with id: {}", id);
-        return ResponseEntity.ok(new Image(id, "Sample Image", "http://example.com/image.jpg", "A sample image description"));
+    public ResponseEntity<ImageResponse> getImageById(@PathVariable Long id) {
+        return imageService.getAllImagesWithDetails().stream()
+                .filter(img -> img.getId().equals(id))
+                .findFirst()
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
@@ -47,6 +51,7 @@ public class ImageController {
         imageService.saveImage(file, name, description, "123");
         return ResponseEntity.status(201).build();
     }
+
 
     @PutMapping("/{id}")
     public ResponseEntity<Image> updateImage(@PathVariable Long id, @RequestBody Image updated) {

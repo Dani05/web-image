@@ -28,4 +28,11 @@ public class InMemoryProfileRepository implements ProfileRepository {
                 .filter(p -> p.getUsername().equals(username))
                 .findFirst();
     }
+
+    @Override
+    public Optional<Profile> findById(Long id) {
+        return profiles.stream()
+                .filter(p -> p.getId().equals(id))
+                .findFirst();
+    }
 }

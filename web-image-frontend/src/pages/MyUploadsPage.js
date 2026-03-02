@@ -235,7 +235,7 @@ const MyUploadsPage = () => {
                         <div className="image-grid">
                             {images.map((image) => (
                                 <div key={image.id} className="image-card">
-                                    <img src={image.url} alt={image.name} />
+                                    <img src={image.imageData} alt={image.name} />
                                     <div className="image-info">
                                         <h4>{image.name}</h4>
                                         <p>{image.description}</p>

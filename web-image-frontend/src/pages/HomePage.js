@@ -43,9 +43,10 @@ const HomePage = () => {
                     <div className="image-grid">
                         {images.map((image) => (
                             <div key={image.id} className="image-card">
-                                <img src={image.url} alt={image.name} />
+                                <img src={image.imageData} alt={image.name} />
                                 <div className="image-info">
                                     <h3>{image.name}</h3>
+                                    <p className="image-uploader">by {image.username}</p>
                                     <p>{image.description}</p>
                                 </div>
                             </div>
