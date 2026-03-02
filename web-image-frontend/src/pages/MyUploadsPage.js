@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import { useAuth } from '../context/AuthContext';
@@ -12,8 +12,11 @@ const MyUploadsPage = () => {
     const [uploading, setUploading] = useState(false);
 
     const [name, setName] = useState('');
-    const [url, setUrl] = useState('');
+    const [file, setFile] = useState(null);
+    const [preview, setPreview] = useState(null);
+    const [dragActive, setDragActive] = useState(false);
     const [description, setDescription] = useState('');
+    const fileInputRef = useRef(null);
 
     const { isAuthenticated, token } = useAuth();
     const navigate = useNavigate();
@@ -41,11 +44,57 @@ const MyUploadsPage = () => {
         }
     };
 
+    const handleFileSelect = (selectedFile) => {
+        if (selectedFile && selectedFile.type.startsWith('image/')) {
+            setFile(selectedFile);
+            setPreview(URL.createObjectURL(selectedFile));
+            setError(null);
+        } else {
+            setError('Please select a valid image file');
+        }
+    };
+
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') {
+            setDragActive(true);
+        } else if (e.type === 'dragleave') {
+            setDragActive(false);
+        }
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleFileSelect(e.dataTransfer.files[0]);
+        }
+    };
+
+    const handleFileInputChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            handleFileSelect(e.target.files[0]);
+        }
+    };
+
+    const removeFile = () => {
+        setFile(null);
+        if (preview) {
+            URL.revokeObjectURL(preview);
+        }
+        setPreview(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     const handleUpload = async (e) => {
         e.preventDefault();
 
-        if (!name || !url) {
-            setError('Name and URL are required');
+        if (!name || !file) {
+            setError('Name and image file are required');
             return;
         }
 
@@ -53,18 +102,11 @@ const MyUploadsPage = () => {
             setUploading(true);
             setError(null);
 
-            const newImage = {
-                id: null,
-                name,
-                url,
-                description: description || '',
-            };
-
-            await createImage(newImage, token);
+            await createImage(file, name, description || '', token);
 
             // Clear form
             setName('');
-            setUrl('');
+            removeFile();
             setDescription('');
 
             // Reload images
@@ -104,29 +146,61 @@ const MyUploadsPage = () => {
                     <form onSubmit={handleUpload} className="upload-form">
                         {error && <div className="error-message">{error}</div>}
 
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="name">Image Name *</label>
-                                <input
-                                    type="text"
-                                    id="name"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="Enter image name"
-                                    disabled={uploading}
-                                />
-                            </div>
+                        <div className="form-group">
+                            <label htmlFor="name">Image Name *</label>
+                            <input
+                                type="text"
+                                id="name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Enter image name"
+                                disabled={uploading}
+                            />
+                        </div>
 
-                            <div className="form-group">
-                                <label htmlFor="url">Image URL *</label>
+                        <div className="form-group">
+                            <label>Image File *</label>
+                            <div
+                                className={`drop-zone ${dragActive ? 'drop-zone--active' : ''} ${file ? 'drop-zone--has-file' : ''}`}
+                                onDragEnter={handleDrag}
+                                onDragLeave={handleDrag}
+                                onDragOver={handleDrag}
+                                onDrop={handleDrop}
+                                onClick={() => !uploading && fileInputRef.current?.click()}
+                            >
                                 <input
-                                    type="url"
-                                    id="url"
-                                    value={url}
-                                    onChange={(e) => setUrl(e.target.value)}
-                                    placeholder="https://example.com/image.jpg"
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleFileInputChange}
                                     disabled={uploading}
+                                    style={{ display: 'none' }}
                                 />
+                                {file && preview ? (
+                                    <div className="drop-zone__preview">
+                                        <img src={preview} alt="Preview" className="drop-zone__thumb" />
+                                        <div className="drop-zone__file-info">
+                                            <span className="drop-zone__filename">{file.name}</span>
+                                            <span className="drop-zone__filesize">
+                                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                                            </span>
+                                            <button
+                                                type="button"
+                                                className="btn btn-danger btn-small"
+                                                onClick={(e) => { e.stopPropagation(); removeFile(); }}
+                                                disabled={uploading}
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="drop-zone__prompt">
+                                        <span className="drop-zone__icon">📁</span>
+                                        <p>Drag & drop an image here or <strong>click to browse</strong></p>
+                                        <span className="drop-zone__hint">Supports JPG, PNG, GIF, WebP</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

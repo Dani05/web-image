@@ -1,18 +1,25 @@
 package org.example.webimagebackend.controller;
 
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.webimagebackend.model.Image;
+import org.example.webimagebackend.service.ImageService;
+import org.example.webimagebackend.service.TokenService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
 @RequestMapping("/api/images")
 @Slf4j
+@AllArgsConstructor
 public class ImageController {
+
+    private final TokenService tokenService;
+    private final ImageService imageService;
 
 
     @GetMapping
@@ -28,9 +35,17 @@ public class ImageController {
     }
 
     @PostMapping
-    public ResponseEntity<Image> createImage(@RequestBody Image image) {
-        log.info("Created image with id: {}", image.getId());
-        return ResponseEntity.status(201).body(image);
+    public ResponseEntity<Void> createImage(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("name") String name,
+            @RequestParam("description") String description,
+            @RequestHeader("Authorization") String authHeader) {
+        log.info("Created image with name: {}", name);
+        var token = authHeader.replace("Bearer ", "");
+        tokenService.verify(token);
+        var claims = tokenService.getClaims(token);
+        imageService.saveImage(file, name, description, "123");
+        return ResponseEntity.status(201).build();
     }
 
     @PutMapping("/{id}")

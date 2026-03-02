@@ -77,4 +77,16 @@ public class TokenService {
         }
 
     }
+
+    public Map<String, Object> getClaims(String token) {
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            return signedJWT.getJWTClaimsSet().getClaims();
+        }
+        catch (Exception e) {
+            log.error("GETTING CLAIMS FROM TOKEN FAILED for token: {}", token, e);
+            throw new RuntimeException("Failed to get claims from token", e);
+        }
+    }
 }
+
