@@ -280,8 +280,6 @@ jobs:
       run: |
         NS="${{ env.OPENSHIFT_NAMESPACE }}"
         echo
-        echo "OpenShift Server: ${{ env.OPENSHIFT_SERVER }}"
-        echo
         echo "Frontend Route:"
         oc -n "$NS" get route "${{ env.FRONTEND_IMAGE }}" -o jsonpath='{.spec.host}{"\n"}' || true
         echo
