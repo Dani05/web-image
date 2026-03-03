@@ -48,6 +48,11 @@ const HomePage = () => {
                                     <h3>{image.name}</h3>
                                     <p className="image-uploader">by {image.username}</p>
                                     <p>{image.description}</p>
+                                    {image.uploadedAt && (
+                                        <p className="upload-date">
+                                            Uploaded: {new Date(image.uploadedAt).toLocaleString()}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         ))}

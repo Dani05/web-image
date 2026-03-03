@@ -239,6 +239,11 @@ const MyUploadsPage = () => {
                                     <div className="image-info">
                                         <h4>{image.name}</h4>
                                         <p>{image.description}</p>
+                                        {image.uploadedAt && (
+                                            <p className="upload-date">
+                                                Uploaded: {new Date(image.uploadedAt).toLocaleString()}
+                                            </p>
+                                        )}
                                         <button
                                             onClick={() => handleDelete(image.id)}
                                             className="btn btn-danger btn-small"

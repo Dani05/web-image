@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -53,6 +54,7 @@ public class ImageService {
                     .contentType(file.getContentType())
                     .filePath(destination.toString())
                     .userId(userId)
+                    .uploadedAt(LocalDateTime.now())
                     .build();
             imageRepository.save(entity);
         } catch (IOException e) {
@@ -95,7 +97,8 @@ public class ImageService {
                             img.getName(),
                             img.getDescription(),
                             username,
-                            imageData
+                            imageData,
+                            img.getUploadedAt()
                     );
                 })
                 .toList();
