@@ -7,4 +7,5 @@ import java.util.Optional;
 public interface ProfileRepository {
     Profile save(Profile profile);
     Optional<Profile> findByUsername(String username);
+    Optional<Profile> findById(Long id);
 }

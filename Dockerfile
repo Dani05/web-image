@@ -20,6 +20,7 @@ RUN npm run build
 FROM eclipse-temurin:21-jre AS backend
 WORKDIR /app
 COPY --from=backend-build /app/target/*.jar app.jar
+RUN mkdir -p /app/uploads && chmod 777 /app/uploads
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
 

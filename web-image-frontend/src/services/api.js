@@ -57,21 +57,23 @@ export const getImageById = async (id) => {
     return await response.json();
 };
 
-export const createImage = async (image, token) => {
+export const createImage = async (file, name, description, token) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('name', name);
+    formData.append('description', description || '');
+
     const response = await fetch(`${API_BASE_URL}/images`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(image),
+        body: formData,
     });
 
     if (!response.ok) {
-        throw new Error('Failed to create image');
+        throw new Error('Failed to upload image');
     }
-
-    return await response.json();
 };
 
 export const deleteImage = async (id, token) => {
