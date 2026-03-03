@@ -41,14 +41,29 @@ public class ImageController {
     @PostMapping
     public ResponseEntity<Void> createImage(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("name") String name,
+            @RequestParam("name") String imageName,
             @RequestParam("description") String description,
             @RequestHeader("Authorization") String authHeader) {
-        log.info("Created image with name: {}", name);
+
+        log.info("Created image with");
         var token = authHeader.replace("Bearer ", "");
         tokenService.verify(token);
         var claims = tokenService.getClaims(token);
-        imageService.saveImage(file, name, description, "123");
+        String username;
+        String userId;
+        try {
+            username = claims.get("username").toString();
+            userId = claims.get("id").toString();
+            if (username == null || username.isEmpty() || userId == null || userId.isEmpty()) {
+                throw new RuntimeException("Missing required token claims");
+            }
+        }
+        catch (Exception e){
+            log.error("Invalid token claims", e);
+            return ResponseEntity.status(401).build();
+        }
+
+        imageService.saveImage(file, imageName, description, userId);
         return ResponseEntity.status(201).build();
     }
 
@@ -60,7 +75,33 @@ public class ImageController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteImage(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteImage(@PathVariable Long id,
+                                            @RequestHeader("Authorization") String authHeader) {
+        var token = authHeader.replace("Bearer ", "");
+        tokenService.verify(token);
+        var claims = tokenService.getClaims(token);
+        String userId;
+        try {
+            userId = claims.get("id").toString();
+            if (userId == null || userId.isEmpty()) {
+                throw new RuntimeException("Missing required token claims");
+            }
+        } catch (Exception e) {
+            log.error("Invalid token claims", e);
+            return ResponseEntity.status(401).build();
+        }
+
+        var imageOpt = imageService.getImageById(id);
+        if (imageOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!imageOpt.get().getUserId().equals(userId)) {
+            log.warn("User {} attempted to delete image {} owned by {}", userId, id, imageOpt.get().getUserId());
+            return ResponseEntity.status(402).build();
+        }
+
+        imageService.deleteImage(id);
         log.info("Deleted image with id: {}", id);
         return ResponseEntity.noContent().build();
     }

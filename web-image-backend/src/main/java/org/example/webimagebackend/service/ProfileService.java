@@ -41,7 +41,7 @@ public class ProfileService {
         if (!hash.equals(profile.getPasswordHash())) {
             throw new RuntimeException(LOGIN_ERROR_MESSAGE);
         }
-        return tokenService.generateToken(profile.getUsername(), Map.of("username", profile.getUsername()));
+        return tokenService.generateToken(profile.getUsername(), Map.of("username", profile.getUsername(), "id", profile.getId()));
     }
 
     private String hashPassword(String password) {

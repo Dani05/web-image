@@ -5,6 +5,7 @@ import org.example.webimagebackend.controller.dto.ImageResponse;
 import org.example.webimagebackend.persistence.ImageRepository;
 import org.example.webimagebackend.persistence.ProfileRepository;
 import org.example.webimagebackend.persistence.entity.ImageEntity;
+import org.example.webimagebackend.persistence.entity.Profile;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -76,7 +77,7 @@ public class ImageService {
                     try {
                         Long userId = Long.parseLong(img.getUserId());
                         username = profileRepository.findById(userId)
-                                .map(p -> p.getUsername())
+                                .map(Profile::getUsername)
                                 .orElse("unknown");
                     } catch (NumberFormatException ignored) {}
 
