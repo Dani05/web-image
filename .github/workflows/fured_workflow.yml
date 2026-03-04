@@ -102,7 +102,7 @@ jobs:
           dockerfiles: ./Dockerfile
           extra-args: |
             --target frontend
-            --build-arg REACT_APP_API_BASE_URL_ARG=${{ vars.BACKEND_URL }}
+            --build-arg REACT_APP_API_BASE_URL_ARG=${{ vars.BACKEND_URL_FURED }}
           platform: linux/amd64
 
         # Build backend image (target=backend)
@@ -206,11 +206,6 @@ jobs:
           oc -n "$NS" get route "$APP" >/dev/null 2>&1 || oc -n "$NS" create route edge "$APP" --service="$APP" --port=8080
           oc -n "$NS" rollout status deploy/"$APP"
 
-        # Deploy frontend + service + route
-        # Create ConfigMap with runtime config
-      #      oc -n "$NS" create configmap frontend-config \
-      #      --from-literal=config.js="window.ENV = { API_BASE_URL: '${{ vars.BACKEND_URL }}' };" \
-      #      --dry-run=client -o yaml | oc apply -f -
 
       - name: Deploy frontend
         id: deploy-and-expose
