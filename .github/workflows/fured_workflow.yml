@@ -19,10 +19,10 @@ env:
 
   IMAGE_TAGS: ""
 
-#on:
-#  workflow_dispatch:
-#  push:
-#    branches: [ "main" ]
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
 
 jobs:
   openshift-ci-cd:
