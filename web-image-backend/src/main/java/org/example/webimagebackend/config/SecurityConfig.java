@@ -25,7 +25,9 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000", "https://web-image-frontend-bartadani-dev.apps.rm3.7wse.p1.openshiftapps.com"));
+        config.setAllowedOrigins(List.of("http://localhost:3000",
+                "https://web-image-frontend-bartadani-dev.apps.rm3.7wse.p1.openshiftapps.com",
+                "https://web-image-frontend-bartadani-dev.apps.okd.fured.cloud.bme.hu"));
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
         config.setAllowedHeaders(List.of(
                 "Authorization",
