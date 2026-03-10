@@ -169,7 +169,15 @@ jobs:
             --from-literal=SECURITY_JWT_SECRET_KEY='${{ secrets.JWT_SECRET_KEY }}' \
             --dry-run=client -o yaml | oc apply -f -  
         
-        
+      - name: Deploy PostgreSQL
+        run: |
+          NS="${{ env.OPENSHIFT_NAMESPACE }}"
+          oc -n "$NS" get svc postgresql >/dev/null 2>&1 || \
+          oc -n "$NS" new-app postgresql-ephemeral \
+            --param POSTGRESQL_USER=webimage \
+            --param POSTGRESQL_PASSWORD=webimage \
+            --param POSTGRESQL_DATABASE=webimage \
+            --param DATABASE_SERVICE_NAME=postgresql
 
         # Deploy backend + service + route
       - name: Deploy backend
@@ -193,6 +201,13 @@ jobs:
           
           oc -n "$NS" get deploy "$APP" >/dev/null 2>&1 || oc -n "$NS" create deployment "$APP" --image="$IMG"
           oc -n "$NS" set image deploy/"$APP" "$APP"="$IMG"
+          
+          # Set Spring profile + DB credentials
+          oc -n "$NS" set env deploy/"$APP" \
+            SPRING_PROFILES_ACTIVE=openshift \
+            SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/webimage \
+            SPRING_DATASOURCE_USERNAME=webimage \
+            SPRING_DATASOURCE_PASSWORD=webimage
           
           # Mount the PVC at /uploads inside the backend container
           oc -n "$NS" set volume deploy/"$APP" \
