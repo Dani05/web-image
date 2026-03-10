@@ -172,12 +172,64 @@ jobs:
       - name: Deploy PostgreSQL
         run: |
           NS="${{ env.OPENSHIFT_NAMESPACE }}"
-          oc -n "$NS" get svc postgresql >/dev/null 2>&1 || \
-          oc -n "$NS" new-app postgresql-ephemeral \
-            --param POSTGRESQL_USER=webimage \
-            --param POSTGRESQL_PASSWORD=webimage \
-            --param POSTGRESQL_DATABASE=webimage \
-            --param DATABASE_SERVICE_NAME=postgresql
+          if oc -n "$NS" get deploy postgresql >/dev/null 2>&1; then
+            echo "PostgreSQL already deployed"
+          else
+            oc -n "$NS" create -f - <<'EOF'
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: postgresql
+            labels:
+              app: postgresql
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: postgresql
+            template:
+              metadata:
+                labels:
+                  app: postgresql
+              spec:
+                containers:
+                  - name: postgresql
+                    image: docker.io/library/postgres:15-alpine
+                    ports:
+                      - containerPort: 5432
+                    env:
+                      - name: POSTGRES_USER
+                        value: webimage
+                      - name: POSTGRES_PASSWORD
+                        value: webimage
+                      - name: POSTGRES_DB
+                        value: webimage
+                      - name: PGDATA
+                        value: /var/lib/postgresql/data/pgdata
+                    resources:
+                      requests:
+                        memory: "128Mi"
+                        cpu: "100m"
+                      limits:
+                        memory: "256Mi"
+                        cpu: "500m"
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: postgresql
+            labels:
+              app: postgresql
+          spec:
+            selector:
+              app: postgresql
+            ports:
+              - port: 5432
+                targetPort: 5432
+          EOF
+            echo "Waiting for PostgreSQL to be ready..."
+            oc -n "$NS" rollout status deploy/postgresql --timeout=120s
+          fi
 
         # Deploy backend + service + route
       - name: Deploy backend
