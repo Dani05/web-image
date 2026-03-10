@@ -172,10 +172,7 @@ jobs:
       - name: Deploy PostgreSQL
         run: |
           NS="${{ env.OPENSHIFT_NAMESPACE }}"
-          if oc -n "$NS" get deploy postgresql >/dev/null 2>&1; then
-            echo "PostgreSQL already deployed"
-          else
-            oc -n "$NS" create -f - <<'EOF'
+          oc -n "$NS" apply -f - <<'EOF'
           apiVersion: apps/v1
           kind: Deployment
           metadata:
@@ -213,7 +210,8 @@ jobs:
                       limits:
                         memory: "256Mi"
                         cpu: "500m"
-          ---
+          EOF
+          oc -n "$NS" apply -f - <<'EOF'
           apiVersion: v1
           kind: Service
           metadata:
@@ -227,9 +225,8 @@ jobs:
               - port: 5432
                 targetPort: 5432
           EOF
-            echo "Waiting for PostgreSQL to be ready..."
-            oc -n "$NS" rollout status deploy/postgresql --timeout=120s
-          fi
+          echo "Waiting for PostgreSQL to be ready..."
+          oc -n "$NS" rollout status deploy/postgresql --timeout=120s
 
         # Deploy backend + service + route
       - name: Deploy backend
