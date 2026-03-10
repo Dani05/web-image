@@ -8,6 +8,29 @@ const HomePage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selected, setSelected] = useState(null);
+    const [sortBy, setSortBy] = useState('date');
+    const [sortDir, setSortDir] = useState('desc');
+
+    const sortedImages = [...images].sort((a, b) => {
+        if (sortBy === 'name') {
+            return sortDir === 'asc'
+                ? a.name.localeCompare(b.name)
+                : b.name.localeCompare(a.name);
+        } else {
+            const dateA = a.uploadedAt ? new Date(a.uploadedAt) : 0;
+            const dateB = b.uploadedAt ? new Date(b.uploadedAt) : 0;
+            return sortDir === 'asc' ? dateA - dateB : dateB - dateA;
+        }
+    });
+
+    const handleSort = (field) => {
+        if (sortBy === field) {
+            setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(field);
+            setSortDir('asc');
+        }
+    };
 
     useEffect(() => {
         loadImages();
@@ -41,23 +64,40 @@ const HomePage = () => {
                 )}
 
                 {!loading && images.length > 0 && (
-                    <div className="image-grid">
-                        {images.map((image) => (
-                            <div key={image.id} className="image-card" onClick={() => setSelected(image)} style={{ cursor: 'pointer' }}>
-                                <img src={image.imageData} alt={image.name} />
-                                <div className="image-info">
-                                    <h3>{image.name}</h3>
-                                    <p className="image-uploader">by {image.username}</p>
-                                    <p>{image.description}</p>
-                                    {image.uploadedAt && (
-                                        <p className="upload-date">
-                                            Uploaded: {new Date(image.uploadedAt).toLocaleString()}
-                                        </p>
-                                    )}
+                    <>
+                        <div className="sort-controls">
+                            <span>Sort by:</span>
+                            <button
+                                className={`sort-btn${sortBy === 'name' ? ' active' : ''}`}
+                                onClick={() => handleSort('name')}
+                            >
+                                Name {sortBy === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+                            </button>
+                            <button
+                                className={`sort-btn${sortBy === 'date' ? ' active' : ''}`}
+                                onClick={() => handleSort('date')}
+                            >
+                                Date {sortBy === 'date' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+                            </button>
+                        </div>
+                        <div className="image-grid">
+                            {sortedImages.map((image) => (
+                                <div key={image.id} className="image-card" onClick={() => setSelected(image)} style={{ cursor: 'pointer' }}>
+                                    <img src={image.imageData} alt={image.name} />
+                                    <div className="image-info">
+                                        <h3>{image.name}</h3>
+                                        <p className="image-uploader">by {image.username}</p>
+                                        <p>{image.description}</p>
+                                        {image.uploadedAt && (
+                                            <p className="upload-date">
+                                                Uploaded: {new Date(image.uploadedAt).toLocaleString()}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    </>
                 )}
 
             {selected && (
