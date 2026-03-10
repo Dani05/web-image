@@ -245,10 +245,13 @@ jobs:
     - name: Deploy PostgreSQL
       run: |
         NS="${{ env.OPENSHIFT_NAMESPACE }}"
-        # Delete old postgresql resources from previous template-based deployment
-        oc -n "$NS" delete deploy postgresql --ignore-not-found
-        oc -n "$NS" delete dc postgresql --ignore-not-found
-        oc -n "$NS" delete svc postgresql --ignore-not-found
+        # Clean up old template-based resources only if they have the wrong selector
+        if oc -n "$NS" get deploy postgresql -o jsonpath='{.spec.selector.matchLabels.name}' 2>/dev/null | grep -q postgresql; then
+          echo "Cleaning up old template-based PostgreSQL deployment..."
+          oc -n "$NS" delete deploy postgresql --ignore-not-found
+          oc -n "$NS" delete dc postgresql --ignore-not-found
+          oc -n "$NS" delete svc postgresql --ignore-not-found
+        fi
         oc -n "$NS" apply -f openshift/postgresql.yaml
         echo "Waiting for PostgreSQL to be ready..."
         oc -n "$NS" rollout status deploy/postgresql --timeout=120s
