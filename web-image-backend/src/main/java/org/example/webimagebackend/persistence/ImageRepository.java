@@ -1,14 +1,10 @@
 package org.example.webimagebackend.persistence;
 
 import org.example.webimagebackend.persistence.entity.ImageEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
-import java.util.Optional;
 
-public interface ImageRepository {
-    ImageEntity save(ImageEntity image);
-    Optional<ImageEntity> findById(Long id);
-    List<ImageEntity> findAll();
+public interface ImageRepository extends JpaRepository<ImageEntity, Long> {
     List<ImageEntity> findByUserId(String userId);
-    void deleteById(Long id);
 }

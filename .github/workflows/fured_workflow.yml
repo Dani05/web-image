@@ -169,7 +169,19 @@ jobs:
             --from-literal=SECURITY_JWT_SECRET_KEY='${{ secrets.JWT_SECRET_KEY }}' \
             --dry-run=client -o yaml | oc apply -f -  
         
-        
+      - name: Deploy PostgreSQL
+        run: |
+          NS="${{ env.OPENSHIFT_NAMESPACE }}"
+          # Clean up old template-based resources only if they have the wrong selector
+          if oc -n "$NS" get deploy postgresql -o jsonpath='{.spec.selector.matchLabels.name}' 2>/dev/null | grep -q postgresql; then
+            echo "Cleaning up old template-based PostgreSQL deployment..."
+            oc -n "$NS" delete deploy postgresql --ignore-not-found
+            oc -n "$NS" delete dc postgresql --ignore-not-found
+            oc -n "$NS" delete svc postgresql --ignore-not-found
+          fi
+          oc -n "$NS" apply -f openshift/postgresql.yaml
+          echo "Waiting for PostgreSQL to be ready..."
+          oc -n "$NS" rollout status deploy/postgresql --timeout=120s
 
         # Deploy backend + service + route
       - name: Deploy backend
@@ -193,6 +205,13 @@ jobs:
           
           oc -n "$NS" get deploy "$APP" >/dev/null 2>&1 || oc -n "$NS" create deployment "$APP" --image="$IMG"
           oc -n "$NS" set image deploy/"$APP" "$APP"="$IMG"
+          
+          # Set Spring profile + DB credentials
+          oc -n "$NS" set env deploy/"$APP" \
+            SPRING_PROFILES_ACTIVE=openshift \
+            SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/webimage \
+            SPRING_DATASOURCE_USERNAME=webimage \
+            SPRING_DATASOURCE_PASSWORD=webimage
           
           # Mount the PVC at /uploads inside the backend container
           oc -n "$NS" set volume deploy/"$APP" \

@@ -1,11 +1,10 @@
 package org.example.webimagebackend.persistence;
 
 import org.example.webimagebackend.persistence.entity.Profile;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface ProfileRepository {
-    Profile save(Profile profile);
+public interface ProfileRepository extends JpaRepository<Profile, Long> {
     Optional<Profile> findByUsername(String username);
-    Optional<Profile> findById(Long id);
 }
