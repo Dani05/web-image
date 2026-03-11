@@ -154,6 +154,7 @@ const MyUploadsPage = () => {
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Enter image name"
+                                maxLength={40}
                                 disabled={uploading}
                             />
                         </div>

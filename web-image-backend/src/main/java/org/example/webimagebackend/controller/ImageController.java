@@ -45,6 +45,13 @@ public class ImageController {
             @RequestParam("description") String description,
             @RequestHeader("Authorization") String authHeader) {
 
+        if (imageName == null || imageName.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (imageName.length() > 40) {
+            return ResponseEntity.badRequest().build();
+        }
+
         log.info("Created image with");
         var token = authHeader.replace("Bearer ", "");
         tokenService.verify(token);

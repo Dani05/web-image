@@ -191,17 +191,7 @@ jobs:
           IMG="${{ env.IMAGE_REGISTRY }}/${APP}:${{ github.sha }}"
           
           # Create PVC for uploaded images if it doesn't exist yet
-          oc -n "$NS" get pvc uploads-pvc >/dev/null 2>&1 || oc -n "$NS" create -f - <<EOF
-          apiVersion: v1
-          kind: PersistentVolumeClaim
-          metadata:
-            name: uploads-pvc
-          spec:
-            accessModes: [ReadWriteOnce]
-            resources:
-              requests:
-                storage: 5Gi
-          EOF
+          oc -n "$NS" apply -f openshift/uploads-pvc.yaml
           
           oc -n "$NS" get deploy "$APP" >/dev/null 2>&1 || oc -n "$NS" create deployment "$APP" --image="$IMG"
           oc -n "$NS" set image deploy/"$APP" "$APP"="$IMG"
@@ -213,13 +203,15 @@ jobs:
             SPRING_DATASOURCE_USERNAME=webimage \
             SPRING_DATASOURCE_PASSWORD=webimage
           
-          # Mount the PVC at /uploads inside the backend container
-          oc -n "$NS" set volume deploy/"$APP" \
-            --add --overwrite \
-            --name=uploads-storage \
-            --type=persistentVolumeClaim \
-            --claim-name=uploads-pvc \
-            --mount-path=/uploads
+          # Mount the PVC at /uploads inside the backend container (only if not already mounted)
+          if ! oc -n "$NS" get deploy "$APP" -o jsonpath='{.spec.template.spec.volumes[*].name}' | grep -q uploads-storage; then
+            oc -n "$NS" set volume deploy/"$APP" \
+              --add \
+              --name=uploads-storage \
+              --type=persistentVolumeClaim \
+              --claim-name=uploads-pvc \
+              --mount-path=/uploads
+          fi
           
           oc -n "$NS" expose deploy "$APP" --port=8080 --name="$APP" || true
           oc -n "$NS" get route "$APP" >/dev/null 2>&1 || oc -n "$NS" create route edge "$APP" --service="$APP" --port=8080
