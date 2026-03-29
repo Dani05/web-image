@@ -9,8 +9,8 @@ jobs:
 
     env:
       # These must be set as GitHub Secrets in the repo or org
-      OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER }}
-      OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN }}
+      OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER_FURED }}
+      OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN_FURED }}
       OPENSHIFT_NAMESPACE: "app-tester"
       IMAGE_REGISTRY: ${{ secrets.IMAGE_REGISTRY }}
       IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
