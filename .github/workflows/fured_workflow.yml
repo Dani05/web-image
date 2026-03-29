@@ -217,6 +217,10 @@ jobs:
           oc -n "$NS" get route "$APP" >/dev/null 2>&1 || oc -n "$NS" create route edge "$APP" --service="$APP" --port=8080
           oc -n "$NS" rollout status deploy/"$APP"
 
+      - name: Apply backend autoscaling (HPA)
+        run: |
+          NS="${{ env.OPENSHIFT_NAMESPACE }}"
+          oc -n "$NS" apply -f openshift/web-image-backend-hpa.yaml
 
       - name: Deploy frontend
         id: deploy-and-expose
