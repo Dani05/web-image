@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: locust-loadtest-config
+  labels:
+    app: locust-loadtest
+data:
+  TARGET_HOST: "https://web-image-backend-bartadani-dev.apps.okd.fured.cloud.bme.hu"
+  LOADTEST_PASSWORD: "LoadTest123!"
+  LOADTEST_USERNAME_PREFIX: "openshift-user"
+  LOADTEST_USER_INDEX_MOD: "5000"
+  WAIT_MIN_SECONDS: "0.2"
+  WAIT_MAX_SECONDS: "1.0"
+  WEIGHT_LIST: "6"
+  WEIGHT_GET: "4"
+  WEIGHT_UPLOAD: "5"
+  WEIGHT_UPDATE: "2"
+  WEIGHT_DELETE: "2"
+  LOCUST_USERS: "80"
+  LOCUST_SPAWN_RATE: "8"
+  LOCUST_RUN_TIME: "20m"
+
+

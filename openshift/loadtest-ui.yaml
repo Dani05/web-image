@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: locust-ui
+  labels:
+    app: locust-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: locust-ui
+  template:
+    metadata:
+      labels:
+        app: locust-ui
+    spec:
+      containers:
+        - name: locust
+          image: ghcr.io/your-org/web-image-locust:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8089
+          envFrom:
+            - configMapRef:
+                name: locust-loadtest-config
+          env:
+            - name: LOCUST_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: locust-loadtest-config
+                  key: TARGET_HOST
+            - name: LOCUST_WEB_PORT
+              value: "8089"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              locust -f /app/locustfile.py --host "$LOCUST_HOST"
+          resources:
+            requests:
+              cpu: "150m"
+              memory: "192Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: locust-ui
+  labels:
+    app: locust-ui
+spec:
+  selector:
+    app: locust-ui
+  ports:
+    - name: web
+      protocol: TCP
+      port: 8089
+      targetPort: 8089
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: locust-ui
+  labels:
+    app: locust-ui
+spec:
+  to:
+    kind: Service
+    name: locust-ui
+  port:
+    targetPort: web
+  tls:
+    termination: edge
+

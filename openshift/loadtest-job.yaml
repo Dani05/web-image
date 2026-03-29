@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: locust-loadtest-headless
+  labels:
+    app: locust-loadtest
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: locust-loadtest
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: locust
+          image: ghcr.io/your-org/web-image-locust:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: locust-loadtest-config
+          env:
+            - name: LOCUST_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: locust-loadtest-config
+                  key: TARGET_HOST
+          command:
+            - /bin/sh
+            - -c
+            - |
+              locust -f /app/locustfile.py \
+                --headless \
+                --host "$LOCUST_HOST" \
+                --users "$LOCUST_USERS" \
+                --spawn-rate "$LOCUST_SPAWN_RATE" \
+                --run-time "$LOCUST_RUN_TIME" \
+                --only-summary \
+                --csv /tmp/locust
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+
