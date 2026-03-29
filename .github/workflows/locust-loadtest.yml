@@ -12,8 +12,10 @@ jobs:
       OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER_FURED }}
       OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN_FURED }}
       OPENSHIFT_NAMESPACE: "app-tester"
-      IMAGE_REGISTRY: ${{ secrets.IMAGE_REGISTRY }}
-      IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
+      IMAGE_REGISTRY: ghcr.io/dani05
+      IMAGE_REGISTRY_USER: ${{ github.actor }}
+      IMAGE_REGISTRY_PASSWORD: ${{ github.token }}
+      IMAGE_NAME: "web-image-locust"
 
     steps:
       - name: Checkout repository
@@ -26,8 +28,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.IMAGE_REGISTRY }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+          username: ${{ env.IMAGE_REGISTRY_USER }}
+          password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
 
       - name: Build and push Locust image
         uses: docker/build-push-action@v6
