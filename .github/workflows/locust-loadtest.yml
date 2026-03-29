@@ -67,26 +67,11 @@ jobs:
           oc delete job locust-loadtest-headless --ignore-not-found
           oc apply -f openshift/loadtest-job.yaml
 
-      - name: Wait for Job to complete (with diagnostics)
+      - name: Wait for Job to finish
         run: |
-          set +e
-          oc wait --for=condition=complete --timeout=1800s job/locust-loadtest-headless
-          STATUS=$?
-          set -e
-
-          echo "oc wait exit code: $STATUS"
-          echo "====== JOB DESCRIPTION ======"
-          oc describe job locust-loadtest-headless || true
-
-          echo "====== JOB PODS ======"
-          oc get pods -l job-name=locust-loadtest-headless -o wide || true
-
-          if [ $STATUS -ne 0 ]; then
-            echo "Job did not complete in time. See description and pod list above."
-            exit $STATUS
-          fi
+          # Wait until the Job either completes successfully or fails, with a hard timeout
+          oc wait --for=condition=complete --for=condition=failed --timeout=1800s job/locust-loadtest-headless
 
       - name: Show Job logs
         run: |
           oc logs job/locust-loadtest-headless
-
