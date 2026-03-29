@@ -18,6 +18,7 @@ A full-stack web application for uploading, viewing, and managing images. Built 
 - [Deployment](#deployment)
   - [OpenShift](#openshift)
   - [CI/CD with GitHub Actions](#cicd-with-github-actions)
+- [Load testing & autoscaling with Locust on OpenShift](#load-testing--autoscaling-with-locust-on-openshift)
 - [Architecture](#architecture)
 
 ---
@@ -187,6 +188,116 @@ Two GitHub Actions workflows are included:
 |----------|------|-------------|
 | Fured OpenShift Deploy | `.github/workflows/fured_workflow.yml` | Builds and deploys the application to OpenShift |
 | OpenShift Deploy | `.github/workflows/openshift.yml` | Additional CI/CD steps  |
+
+## Load testing & autoscaling with Locust on OpenShift
+
+To verify the application under load and observe Horizontal Pod Autoscaling (HPA) behaviour, the repository includes a Locust-based load test and OpenShift manifests.
+
+#### Components
+
+- `loadtest/` – Locust load test image
+  - `Dockerfile` – container image for Locust
+  - `locustfile.py` – test scenarios (browse, upload, update, delete)
+  - `requirements.txt` – pinned Locust & Python deps
+- `openshift/loadtest-configmap.yaml` – runtime configuration for Locust
+  - `TARGET_HOST` – backend URL in OpenShift (Route of the Spring Boot API)
+  - `LOCUST_USERS`, `LOCUST_SPAWN_RATE`, `LOCUST_RUN_TIME` – load profile
+  - `WEIGHT_*`, `WAIT_*` – request mix and think time
+- `openshift/loadtest-job.yaml` – headless Locust Job for scripted runs
+- `openshift/loadtest-ui.yaml` – Locust UI Deployment + Service + Route
+- `openshift/web-image-backend-hpa.yaml` – HPA definition for the backend
+- `.github/workflows/locust-loadtest.yml` – GitHub Actions workflow that builds the Locust image, deploys it to OpenShift and runs the headless job
+
+#### 1. Configure OpenShift & registry access
+
+1. Make sure your backend is deployed to OpenShift and exposed via a Route (see the main OpenShift workflow in `.github/workflows/openshift.yml`).
+2. Edit `openshift/loadtest-configmap.yaml` and set:
+   - `TARGET_HOST` to your backend Route, e.g. `https://web-image-backend-<ns>.apps.<cluster-domain>`
+   - Optionally tune `LOCUST_USERS`, `LOCUST_SPAWN_RATE`, `LOCUST_RUN_TIME` for desired intensity.
+3. Configure GitHub Secrets in your repository (Settings → Secrets and variables → Actions):
+   - `OPENSHIFT_SERVER` – OpenShift API URL
+   - `OPENSHIFT_TOKEN` – token with access to your project (e.g. `oc whoami -t`)
+   - `OPENSHIFT_NAMESPACE` – target OpenShift project/namespace
+   - `IMAGE_REGISTRY` – e.g. `ghcr.io`
+   - `IMAGE_NAME` – e.g. `<your-gh-user-or-org>/web-image-locust`
+   - `REGISTRY_USERNAME` / `REGISTRY_PASSWORD` – credentials for the registry
+
+#### 2. Run the Locust load test from GitHub Actions
+
+The workflow is defined in `.github/workflows/locust-loadtest.yml` and is **manual only** (`workflow_dispatch`). It will:
+
+1. Build the Locust image from `loadtest/` and push it to `${IMAGE_REGISTRY}/${IMAGE_NAME}:latest`.
+2. Install the `oc` CLI and log in to OpenShift using the provided token.
+3. Patch `openshift/loadtest-job.yaml` and `openshift/loadtest-ui.yaml` to point to the freshly built image.
+4. Apply `loadtest-configmap.yaml`, `loadtest-ui.yaml` and `loadtest-job.yaml`.
+5. Start the headless Job, wait for completion and print Locust statistics to the job log.
+
+To run it:
+
+1. Open your GitHub repository.
+2. Go to **Actions → Run Locust load test on OpenShift**.
+3. Click **Run workflow** and wait for it to finish.
+4. Inspect the last step ("Show Job logs") for RPS, response times and failures.
+
+#### 3. Using the Locust UI in the cloud
+
+Besides the headless job, you can use the Locust web UI deployed in the university OpenShift cluster.
+
+1. Ensure `openshift/loadtest-ui.yaml` has been applied (either via the workflow or manually):
+
+```bash
+oc apply -f openshift/loadtest-configmap.yaml
+oc apply -f openshift/loadtest-ui.yaml
+```
+
+2. Get the externally accessible Route for the UI:
+
+```bash
+oc project <your-namespace>
+oc get route locust-ui
+```
+
+3. Copy the `HOST/PORT` value, e.g. `https://locust-ui-<ns>.apps.<cluster-domain>` and open it in your browser.
+4. On the Locust start page you can configure number of users and spawn rate, then click **Start swarming** to generate traffic towards `TARGET_HOST`.
+
+#### 4. Observing autoscaling
+
+To test autoscaling behaviour of the backend under load:
+
+1. Apply the HPA definition:
+
+```bash
+oc apply -f openshift/web-image-backend-hpa.yaml
+```
+
+2. Run a sustained load test (e.g. `LOCUST_USERS=80`, `LOCUST_RUN_TIME=20m`).
+3. Watch the HPA and backend pods:
+
+```bash
+oc get hpa
+oc describe hpa web-image-backend-hpa
+oc get pods -l app=web-image-backend -w
+oc top pods -l app=web-image-backend
+```
+
+4. Verify that pods scale up under load and scale down again after the test.
+
+5. When finished, you can clean up load test resources:
+
+```bash
+oc delete job locust-loadtest-headless --ignore-not-found
+oc delete deployment locust-ui --ignore-not-found
+oc delete svc locust-ui --ignore-not-found
+oc delete route locust-ui --ignore-not-found
+```
+
+6. Example for events from the HPA:
+
+```
+  Normal   SuccessfulRescale             46m (x2 over 52m)     horizontal-pod-autoscaler  New size: 4; reason: cpu resource above target
+  Normal   SuccessfulRescale             41m                   horizontal-pod-autoscaler  New size: 2; reason: All metrics below target
+  Normal   SuccessfulRescale             40m (x2 over 3h17m)   horizontal-pod-autoscaler  New size: 1; reason: All metrics below target
+```
 
 ---
 
