@@ -1,6 +1,7 @@
 package org.example.webimagebackend.service;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.webimagebackend.persistence.ProfileRepository;
 import org.example.webimagebackend.persistence.entity.Profile;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import java.util.Map;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class ProfileService {
 
     public static final String LOGIN_ERROR_MESSAGE = "username or password is wrong";
@@ -52,5 +54,10 @@ public class ProfileService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 algorithm not available", e);
         }
+    }
+
+    public void deleteAllProfiles() {
+        profileRepository.deleteAll();
+        log.info("Deleted all profiles");
     }
 }

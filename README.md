@@ -301,6 +301,9 @@ oc delete route locust-ui --ignore-not-found
 
 7. Result of load test:
 
+**Chart**
+
+
 **Request statistics**
 
 | Type | Name            | # reqs | # fails (% of total) | Avg (ms) | Min (ms) | Max (ms) | Med (ms) | req/s | failures/s |

@@ -1,6 +1,8 @@
 import os
 import random
 import string
+import mimetypes
+from pathlib import Path
 from typing import Any
 
 from locust import HttpUser, between, task
@@ -14,6 +16,10 @@ IMAGES_PATH = f"{API_PREFIX}/images"
 PASSWORD = os.getenv("LOADTEST_PASSWORD", "LoadTest123!")
 USERNAME_PREFIX = os.getenv("LOADTEST_USERNAME_PREFIX", "loaduser")
 USER_INDEX_MOD = max(1, int(os.getenv("LOADTEST_USER_INDEX_MOD", "5000")))
+
+# Sample image payloads used for upload tasks.
+TEST_FILES_DIR = Path(__file__).parent / "test-files"
+TEST_FILES = [p for p in TEST_FILES_DIR.iterdir() if p.is_file()]
 
 # Read-heavy mix with write pressure for autoscaling tests.
 TASK_WEIGHTS = {
@@ -151,10 +157,16 @@ class PhotoAlbumUser(HttpUser):
 
         img_name = f"lt-{_rand_suffix(6)}"
         desc = f"loadtest-{_rand_suffix(10)}"
-        file_content = os.urandom(8 * 1024)
-        files = {
-            "file": ("loadtest.bin", file_content, "application/octet-stream"),
-        }
+        file_path = random.choice(TEST_FILES) if TEST_FILES else None
+        if file_path:
+            file_content = file_path.read_bytes()
+            content_type = mimetypes.guess_type(file_path.name)[0] or "application/octet-stream"
+            upload_name = file_path.name
+        else:
+            file_content = os.urandom(8 * 1024)
+            content_type = "application/octet-stream"
+            upload_name = "loadtest.bin"
+        files = {"file": (upload_name, file_content, content_type)}
         data = {
             "name": img_name,
             "description": desc,

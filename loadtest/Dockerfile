@@ -6,8 +6,8 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY locustfile.py ./
+COPY test-files ./test-files
 
 EXPOSE 8089
 
 ENTRYPOINT ["locust", "-f", "/app/locustfile.py"]
-
