@@ -1,7 +1,6 @@
 import os
 import random
 import string
-import time
 from typing import Any
 
 from locust import HttpUser, between, task
@@ -45,12 +44,37 @@ class PhotoAlbumUser(HttpUser):
         self._ensure_user_and_login()
 
     def _build_username(self) -> str:
-        idx = (hash(f"{id(self)}-{time.time_ns()}") % USER_INDEX_MOD) + 1
-        return f"{USERNAME_PREFIX}-{idx:04d}"
+        # Spread users over a wide space and add a random suffix to avoid collisions with existing accounts.
+        idx = random.randint(1, USER_INDEX_MOD)
+        return f"{USERNAME_PREFIX}-{idx:04d}-{_rand_suffix(6)}"
 
     def _ensure_user_and_login(self) -> None:
-        payload = {"username": self.username, "password": self.password}
-        self.client.post(REGISTER_PATH, json=payload, name="auth_register")
+        # Retry with fresh usernames if a collision occurs to avoid login 401s on existing accounts.
+        payload = None
+        for _ in range(5):
+            current_payload = {"username": self.username, "password": self.password}
+            with self.client.post(
+                REGISTER_PATH,
+                json=current_payload,
+                name="auth_register",
+                catch_response=True,
+            ) as response:
+                if response.status_code == 200:
+                    payload = current_payload
+                    response.success()
+                    break
+                if response.status_code == 400:
+                    # Username already exists; pick a new one and retry.
+                    response.success()
+                    self.username = self._build_username()
+                    continue
+                response.failure(f"Register failed with status={response.status_code}")
+                return
+        else:
+            return
+
+        if payload is None:
+            return
 
         with self.client.post(
             LOGIN_PATH,

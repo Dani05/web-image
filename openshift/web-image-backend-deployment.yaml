@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-image-backend
+  labels:
+    app: web-image-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-image-backend
+  template:
+    metadata:
+      labels:
+        app: web-image-backend
+    spec:
+      containers:
+        - name: web-image-backend
+          image: ghcr.io/dani05/web-image-backend:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: openshift
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgresql:5432/webimage
+            - name: SPRING_DATASOURCE_USERNAME
+              value: webimage
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: webimage
+          volumeMounts:
+            - name: uploads-storage
+              mountPath: /uploads
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+      volumes:
+        - name: uploads-storage
+          persistentVolumeClaim:
+            claimName: uploads-pvc
+
