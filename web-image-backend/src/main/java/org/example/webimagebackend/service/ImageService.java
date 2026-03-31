@@ -74,34 +74,40 @@ public class ImageService {
 
     public List<ImageResponse> getAllImagesWithDetails() {
         return imageRepository.findAll().stream()
-                .map(img -> {
-                    String username = "unknown";
-                    try {
-                        Long userId = Long.parseLong(img.getUserId());
-                        username = profileRepository.findById(userId)
-                                .map(Profile::getUsername)
-                                .orElse("unknown");
-                    } catch (NumberFormatException ignored) {}
-
-                    String imageData = null;
-                    try {
-                        byte[] bytes = Files.readAllBytes(Paths.get(img.getFilePath()));
-                        String mime = img.getContentType() != null ? img.getContentType() : "image/jpeg";
-                        imageData = "data:" + mime + ";base64," + Base64.getEncoder().encodeToString(bytes);
-                    } catch (IOException e) {
-                        log.warn("Could not read file for image {}: {}", img.getId(), e.getMessage());
-                    }
-
-                    return new ImageResponse(
-                            img.getId(),
-                            img.getName(),
-                            img.getDescription(),
-                            username,
-                            imageData,
-                            img.getUploadedAt()
-                    );
-                })
+                .map(this::toImageResponse)
                 .toList();
+    }
+
+    public Optional<ImageResponse> getImageWithDetails(Long id) {
+        return imageRepository.findById(id).map(this::toImageResponse);
+    }
+
+    private ImageResponse toImageResponse(ImageEntity img) {
+        String username = "unknown";
+        try {
+            Long userId = Long.parseLong(img.getUserId());
+            username = profileRepository.findById(userId)
+                    .map(Profile::getUsername)
+                    .orElse("unknown");
+        } catch (NumberFormatException ignored) {}
+
+        String imageData = null;
+        try {
+            byte[] bytes = Files.readAllBytes(Paths.get(img.getFilePath()));
+            String mime = img.getContentType() != null ? img.getContentType() : "image/jpeg";
+            imageData = "data:" + mime + ";base64," + Base64.getEncoder().encodeToString(bytes);
+        } catch (IOException e) {
+            log.warn("Could not read file for image {}: {}", img.getId(), e.getMessage());
+        }
+
+        return new ImageResponse(
+                img.getId(),
+                img.getName(),
+                img.getDescription(),
+                username,
+                imageData,
+                img.getUploadedAt()
+        );
     }
 
     public Optional<ImageEntity> getImageById(Long id) {
@@ -123,5 +129,3 @@ public class ImageService {
         imageRepository.deleteById(id);
     }
 }
-
-

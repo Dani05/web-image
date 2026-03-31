@@ -31,9 +31,7 @@ public class ImageController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ImageResponse> getImageById(@PathVariable Long id) {
-        return imageService.getAllImagesWithDetails().stream()
-                .filter(img -> img.getId().equals(id))
-                .findFirst()
+        return imageService.getImageWithDetails(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
