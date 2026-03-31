@@ -69,11 +69,11 @@ public class ImageService {
     }
 
     public List<ImageEntity> getAllImages() {
-        return imageRepository.findAll();
+        return imageRepository.findTop21ByOrderByUploadedAtDesc();
     }
 
     public List<ImageResponse> getAllImagesWithDetails() {
-        return imageRepository.findAll().stream()
+        return imageRepository.findTop21ByOrderByUploadedAtDesc().stream()
                 .map(this::toImageResponse)
                 .toList();
     }
