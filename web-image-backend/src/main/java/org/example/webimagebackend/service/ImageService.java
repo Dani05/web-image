@@ -128,4 +128,16 @@ public class ImageService {
         });
         imageRepository.deleteById(id);
     }
+
+    public void deleteAllImagesAndFiles() {
+        imageRepository.findAll().forEach(entity -> {
+            try {
+                Files.deleteIfExists(Paths.get(entity.getFilePath()));
+            } catch (IOException e) {
+                log.warn("Could not delete file for image {}: {}", entity.getId(), e.getMessage());
+            }
+        });
+        imageRepository.deleteAll();
+        log.info("Deleted all images and files");
+    }
 }
